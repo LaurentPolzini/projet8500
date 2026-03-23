@@ -1,7 +1,4 @@
 #ifndef __PANNEL_H__
-#define __PANNEL_H__
-
-#include <stdbool.h>
 
 /* Modes de la boîte avionique */
 typedef enum {
@@ -36,9 +33,9 @@ void panel_set_display(const PanelDisplay *display);
 PanelInputs panel_get_inputs(void);
 
 /* Saisie utilisateur avec validation + message d'erreur */
-bool panel_set_altitude_desiree(int altitude_ft);
-bool panel_set_taux_monte(double taux_mpm);
-bool panel_set_angle(double angle_deg);
+int panel_set_altitude_desiree(int altitude_ft);
+int panel_set_taux_monte(double taux_mpm);
+int panel_set_angle(double angle_deg);
 
 /* Gestion des erreurs (NULL si pas d’erreur) */
 const char *panel_get_last_error(void);

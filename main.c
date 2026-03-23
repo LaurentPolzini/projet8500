@@ -7,12 +7,12 @@ int main(void)
 
     // test altitude valide
     if (!panel_set_altitude_desiree(35000)) {
-        printf("Erreur: %s\n", panel_get_last_error());
+        printf("Erreur (35000): %s\n", panel_get_last_error());
     }
 
     // test altitude invalide
     if (!panel_set_altitude_desiree(50000)) {
-        printf("Erreur: %s\n", panel_get_last_error());
+        printf("Erreur (50000): %s\n", panel_get_last_error());
     }
 
     PanelInputs inputs = panel_get_inputs();

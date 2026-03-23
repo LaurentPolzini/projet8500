@@ -51,35 +51,35 @@ const char *panel_get_last_error(void)
 
 /* --- Fonctions de saisie avec validation --- */
 
-bool panel_set_altitude_desiree(int altitude_ft)
+int panel_set_altitude_desiree(int altitude_ft) 
 {
     if (altitude_ft < 0 || altitude_ft > 40000) {
         panel_set_error("Altitude desiree hors [0, 40000] ft");
-        return false;
+        return 0;
     }
     g_inputs.altitude_desiree_ft = altitude_ft;
     panel_set_error(NULL);
-    return true;
+    return 1;
 }
 
-bool panel_set_taux_monte(double taux_mpm)
+int panel_set_taux_monte(double taux_mpm) 
 {
     if (taux_mpm < -800.0 || taux_mpm > 800.0) {
         panel_set_error("Taux de montee hors [-800, 800] m/min");
-        return false;
+        return 0;
     }
     g_inputs.taux_monte_mpm = taux_mpm;
     panel_set_error(NULL);
-    return true;
+    return 1;
 }
 
-bool panel_set_angle(double angle_deg)
+int panel_set_angle(double angle_deg)
 {
     if (angle_deg < -16.0 || angle_deg > 16.0) {
         panel_set_error("Angle d'attaque hors [-16, 16] deg");
-        return false;
+        return 0;
     }
     g_inputs.angle_deg = angle_deg;
     panel_set_error(NULL);
-    return true;
+    return 1;
 }

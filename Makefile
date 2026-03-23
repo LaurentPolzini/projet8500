@@ -34,4 +34,3 @@ clean:
 	@rm -rf *.o
 	
 main.o: pannel.h
-
