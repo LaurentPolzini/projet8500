@@ -1,6 +1,6 @@
 #include <stdio.h>
-#include "panel.h"
 #include <string.h>
+#include "pannel.h"
 
 static PanelDisplay g_display;
 static PanelInputs  g_inputs;

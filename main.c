@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "panel.h"
+#include "pannel.h"
 
 int main(void)
 {
