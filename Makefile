@@ -31,6 +31,6 @@ $(EXEC): $(OBJ)
 .PHONY: clean mrproper
 
 clean:
-	@rm -rf *.o
+	@rm -rf *.o $(EXEC)
 	
 main.o: pannel.h

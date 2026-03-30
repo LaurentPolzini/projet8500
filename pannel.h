@@ -1,4 +1,5 @@
 #ifndef __PANNEL_H__
+#define __PANNEL_H__
 
 /* Modes de la boîte avionique */
 typedef enum {
@@ -47,8 +48,8 @@ int panel_set_taux_montee(Panel pan, float taux_mpm);
 int panel_set_angle(Panel pan, float angle_deg);
 
 int panel_get_altitude_desiree(Panel pan);
-int panel_get_taux_montee(Panel pan);
-int panel_get_angle(Panel pan);
+float panel_get_taux_montee(Panel pan);
+float panel_get_angle(Panel pan);
 
 /* Gestion des erreurs (NULL si pas d’erreur) */
 const char *panel_get_last_error(Panel pan);

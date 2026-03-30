@@ -1,15 +1,26 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "pannel.h"
+#include "agregateur.h"
+#include "calculateur.h"
 
-int agregateur_set_altitude_desiree(Panel panel, int altitude_ft) {
-    
+Agregateur agregateur_init(Panel panel)
+{
+    Agregateur ag;
+    ag.panel = panel;
+    return ag;
 }
 
-int agregateur_set_taux_monte(Panel panel, double taux_mpm) {
+void agregateur_step(Agregateur *ag)
+{
+    PanelInputs  inputs  = panel_get_inputs(ag->panel);
+    PanelDisplay state   = panel_get_display(ag->panel);
 
-}
+    CalcInput cin;
+    cin.inputs   = inputs;
+    cin.state_in = state;
 
-int agregateur_set_angle(Panel panel, double angle_deg) {
+    CalcOutput cout;
+    calculateur_run(&cin, &cout);
 
+    panel_set_display(ag->panel, &cout.state_out);
 }
