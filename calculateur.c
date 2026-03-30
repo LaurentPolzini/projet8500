@@ -87,7 +87,8 @@ void calculateur_run(const CalcInput *in, CalcOutput *out)
     /* Mise à jour de l'altitude : on suppose 1 minute par appel, 
        avec conversion approx m -> ft (1 m ≈ 3.28 ft). [file:2] */
     const float M_TO_FT = 3.28f;
-    float delta_ft = taux_m * M_TO_FT;
+    float dt_min = 10.0f / 60.0f;   // 10 secondes = 1/6 minute
+    float delta_ft = taux_m * dt_min * M_TO_FT;
     int new_alt = current_alt + (int)lroundf(delta_ft);
 
     /* Clamps d'altitude suivant la spec : [0, 40000] ft. [file:2] */

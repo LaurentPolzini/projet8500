@@ -7,6 +7,12 @@
 #include "pannel.h"
 #include "calculateur.h"
 
+#define MAX_SAMPLES 200
+
+static int   g_altHistory[MAX_SAMPLES];
+static int   g_sampleCount = 0;
+
+
 // IDs pour les contrôles
 #define IDC_ALT_INPUT   101
 #define IDC_TAUX_INPUT  102
@@ -130,6 +136,20 @@ static void handle_send(HWND hwnd)
     panel_set_display(g_panel, &cout.state_out);
 
     update_display_from_panel();
+
+    PanelDisplay d = panel_get_display(g_panel);
+
+    /* décalage simple dans l'historique */
+    if (g_sampleCount < MAX_SAMPLES) {
+        g_altHistory[g_sampleCount++] = d.altitude_ft;
+    } else {
+        memmove(&g_altHistory[0], &g_altHistory[1],
+                (MAX_SAMPLES - 1) * sizeof(int));
+        g_altHistory[MAX_SAMPLES - 1] = d.altitude_ft;
+    }
+
+    /* redessiner la fenêtre (et donc le graphe) */
+    InvalidateRect(hwnd, NULL, TRUE);
 }
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -216,12 +236,73 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
         if (LOWORD(wParam) == IDC_BTN_SEND &&
             HIWORD(wParam) == BN_CLICKED) {
             handle_send(hwnd);
+
         }
         break;
 
     case WM_DESTROY:
         PostQuitMessage(0);
         break;
+
+    
+    case WM_PAINT: {
+        PAINTSTRUCT ps;
+        HDC hdc = BeginPaint(hwnd, &ps);
+
+        RECT rc;
+        GetClientRect(hwnd, &rc);
+
+        // zone graphe (par ex. en bas de fenêtre)
+        RECT plotRect = rc;
+        plotRect.top = 320;    // à ajuster selon la taille de la fenêtre
+
+        // fond blanc
+        FillRect(hdc, &plotRect, (HBRUSH)(COLOR_WINDOW+1));
+
+        // axes simples
+        MoveToEx(hdc, plotRect.left + 40, plotRect.top + 10, NULL);
+        LineTo(hdc, plotRect.left + 40, plotRect.bottom - 20);
+        LineTo(hdc, plotRect.right - 10, plotRect.bottom - 20);
+
+        if (g_sampleCount > 1) {
+            // trouver min/max pour normaliser
+            int minAlt = g_altHistory[0];
+            int maxAlt = g_altHistory[0];
+            for (int i = 1; i < g_sampleCount; ++i) {
+                if (g_altHistory[i] < minAlt) minAlt = g_altHistory[i];
+                if (g_altHistory[i] > maxAlt) maxAlt = g_altHistory[i];
+            }
+            if (maxAlt == minAlt) maxAlt = minAlt + 1; // éviter division par 0
+
+            int width  = (plotRect.right - 60);
+            int height = (plotRect.bottom - plotRect.top - 40);
+
+            // trace altitude (courbe bleue)
+            HPEN hPen = CreatePen(PS_SOLID, 2, RGB(0, 0, 255));
+            HPEN hOld = SelectObject(hdc, hPen);
+
+            for (int i = 0; i < g_sampleCount; ++i) {
+                float xNorm = (float)i / (float)(MAX_SAMPLES - 1);
+                float yNorm = (float)(g_altHistory[i] - minAlt) /
+                            (float)(maxAlt - minAlt);
+
+                int x = plotRect.left + 40 + (int)(xNorm * width);
+                int y = plotRect.bottom - 20 - (int)(yNorm * height);
+
+                if (i == 0) {
+                    MoveToEx(hdc, x, y, NULL);
+                } else {
+                    LineTo(hdc, x, y);
+                }
+            }
+
+            SelectObject(hdc, hOld);
+            DeleteObject(hPen);
+        }
+
+        EndPaint(hwnd, &ps);
+        break;
+    }
 
     default:
         return DefWindowProcA(hwnd, msg, wParam, lParam);
