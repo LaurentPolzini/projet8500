@@ -1,15 +1,19 @@
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <string.h>
 #include "pannel.h"
 #include "calculateur.h"
 
-int main(void)
+/* Prototypes des fonctions de tests */
+void tests_pannel(void);
+void tests_calculateur(void);
+
+static void run_simulation(void)
 {
     Panel panel = panel_init();
     if (!panel) {
         fprintf(stderr, "Erreur: panel_init a echoue\n");
-        return 1;
+        return;
     }
 
     /* Etat initial : 0 ft, AU_SOL. */
@@ -26,7 +30,7 @@ int main(void)
         fprintf(stderr, "Erreur de saisie altitude: %s\n",
                 panel_get_last_error(panel));
         panel_destroy(&panel);
-        return 1;
+        return;
     }
 
     printf("Simulation vers %d ft\n", altitude_target);
@@ -58,5 +62,16 @@ int main(void)
     }
 
     panel_destroy(&panel);
+}
+
+int main(int argc, char *argv[])
+{
+    if (argc > 1 && strcmp(argv[1], "tests") == 0) {
+        tests_pannel();
+        tests_calculateur();
+        return 0;
+    }
+
+    run_simulation();
     return 0;
 }

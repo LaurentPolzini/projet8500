@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <assert.h>
-
 #include "pannel.h"
 #include "calculateur.h"
 
@@ -14,7 +13,7 @@ static PanelDisplay make_display(int altitude_ft, PanelMode mode)
     return d;
 }
 
-int main(void)
+void tests_calculateur(void)
 {
     /* Cas 1 : AU_SOL, altitude désirée > 0 => doit monter. */
     PanelDisplay st1 = make_display(0, MODE_AU_SOL);
@@ -56,5 +55,5 @@ int main(void)
     assert(o3.state_out.altitude_ft <= 40000);
 
     printf("testsCalculateur OK\n");
-    return 0;
+    return;
 }

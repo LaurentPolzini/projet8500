@@ -2,7 +2,7 @@
 #include <assert.h>
 #include "pannel.h"
 
-int main(void)
+void tests_pannel(void)
 {
     Panel p = panel_init();
     assert(p != NULL);
@@ -34,5 +34,5 @@ int main(void)
 
     printf("testsPannel OK\n");
     panel_destroy(&p);
-    return 0;
+    return;
 }
