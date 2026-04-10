@@ -3,11 +3,11 @@
 
 #include "pannel.h"
 
-int agregateur_set_altitude_desiree(Panel panel, int altitude_ft);
+typedef struct {
+    Panel panel;
+} Agregateur;
 
-int agregateur_set_taux_monte(Panel panel, double taux_mpm);
-
-int agregateur_set_angle(Panel panel, double angle_deg);
-
+Agregateur agregateur_init(Panel panel);
+void agregateur_step(Agregateur *ag);
 
 #endif
