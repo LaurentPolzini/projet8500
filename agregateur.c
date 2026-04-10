@@ -3,7 +3,7 @@
 #include "pannel.h"
 
 int agregateur_set_altitude_desiree(Panel panel, int altitude_ft) {
-    
+    return panel_set_altitude_desiree(panel, altitude_ft);
 }
 
 int agregateur_set_taux_monte(Panel panel, double taux_mpm) {
