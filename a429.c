@@ -174,7 +174,7 @@ uint8_t *BCD_encrypt(float resol, uint8_t digits, float value) {
 /*
     Fonction inverse
 */
-float BCD_decrypt(uint8_t *bits, uint8_t digits, float resol) {
+float BCD_decrypt(uint8_t *bits, uint8_t digits, float resol, uint8_t *ssm) {
     int value = 0;
 
     for (int d = 0; d < digits; d++) {
@@ -186,14 +186,16 @@ float BCD_decrypt(uint8_t *bits, uint8_t digits, float resol) {
 
         value = value * 10 + digit;
     }
-
+    if (ssm[0] && ssm[1]) { // ssm = 11 => negatif
+        value = -value;
+    }
     return value * resol;
 }
 
 /// @brief compose un mot arinc 429
 /// @param label 1, 2 ou 3. Altitude, taux montée, angle attaque
 /// @param value la valeur a encoder
-/// @param etatAvionnique au_sol (0), changement_alt (1), vol_croisiere (2). -1 si label != 1
+/// @param etatAvionnique au_sol (0), changement_alt (1), vol_croisiere (2). ignoré si label != 1
 /// @return un mot de 32 bits.
 t_a429_word get_A429_word(uint8_t label, float value, int etat) {
 
@@ -263,15 +265,12 @@ t_a429_word get_A429_word(uint8_t label, float value, int etat) {
     memcpy(w.sdi, &mot[9], 2);
     memcpy(w.label, &mot[0], 8);
 
-    w.total_word = mot;
+    memcpy(w.total_word, mot, 32);
 
     free(encoded);
+    free(mot);
 
     return w;
-}
-
-void free_word(t_a429_word w) {
-    free(w.total_word);
 }
 
 int get_true_label(t_a429_word word) {
@@ -284,21 +283,16 @@ int get_true_label(t_a429_word word) {
 
 float get_value_from_a429(t_a429_word w)
 {
-    int label = 0;
-
-    for (int i = 0; i < 8; i++)
-        label = (label << 1) | w.label[i];
-
-    switch (label) {
+    switch (get_true_label(w)) {
 
         case LABEL_ALTITUDE:
             return (int) round(BNR_decrypt(w.data, 16, 40000));
 
         case LABEL_TAUX_MONTEE:
-            return ((int) (BCD_decrypt(w.data, 4, 0.1) * 10)) / 10; // on garde le dizieme
+            return ((int) (BCD_decrypt(w.data, 4, 0.1, w.ssm) * 10)) / 10.0; // on garde le dizieme
 
         case LABEL_ANGLE_ATTAK:
-            return ((int) (BCD_decrypt(w.data, 3, 0.1) * 10)) / 10;
+            return ((int) (BCD_decrypt(w.data, 3, 0.1, w.ssm) * 10)) / 10.0;
 
         default:
             return 0;
@@ -341,58 +335,23 @@ void afficheA429_word(t_a429_word word) {
 
     printf("LABEL : ");
     afficheMot(word.label, 8);
-    printf("  ==> Vaut : %d\n", get_true_label(word));
 
     printf("FULL WORD : ");
     afficheMot(word.total_word, 0);
 
     printf("=================\n");
 
-    printf("Valeur encodée : %f\n\n", get_value_from_a429(word));
-}
-
-
-int main(void) {
-    /*
-    unsigned int mot[32];
-    for (int i = 0 ; i < sizeMot - 1 ; ++i) {
-        mot[i] = 0;
+    float val = get_value_from_a429(word);
+    switch (get_true_label(word))
+    {
+    case LABEL_ALTITUDE:
+        printf("Altitude : %d pieds\n", (int) val);
+        break;
+    case LABEL_TAUX_MONTEE:
+        printf("Taux de montée : %.1f m/min\n", val);
+        break;
+    case LABEL_ANGLE_ATTAK:
+        printf("Angle d'attaque : %.1f°\n", val);
+        break;
     }
-    mot[31] = 1;
-    afficheMot(mot, 0);
-
-    printf("Parite : %d\n", calculParite(mot));
-
-
-    float temp = 25.75;
-    unsigned int *bnrTemp = BNR_encrypt(0.25, 11, 512, temp);
-
-    afficheMot(bnrTemp, 11);
-    free(bnrTemp);
-
-    printf("Nb sigbits : %d\n", getNbSigBits(180, 0.04394));
-
-    printf("Range : %d\n", getRange(16, 0.015625));
-
-    printf("Resol : %f\n", getResol(1024, 16));
-
-    unsigned int *bcdTemp = BCD_encrypt(0.1, 4, 799.5);
-
-    afficheMot(bcdTemp, 20);
-
-    float valueDecrypted = BCD_decrypt(bcdTemp, 4, 0.1);
-
-    printf("Valeur decryptee BCD : %f\n", valueDecrypted);
-
-    free(bcdTemp);
-    */
-
-    // Test A429
-    t_a429_word word = get_A429_word(LABEL_ALTITUDE, 18500, 1);
-
-    afficheA429_word(word);    
-
-    free_word(word);
-
-    return 0;
 }

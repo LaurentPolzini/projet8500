@@ -3,6 +3,14 @@
 
 #include <stdint.h>
 
+/*
+    Exemple d'utilisation : 
+        // Test A429
+        t_a429_word word = get_A429_word(LABEL_ALTITUDE, 18500, 1);
+
+        afficheA429_word(word); // affichage des champs et de la valeur encodée
+*/
+
 typedef enum {
     LABEL_ALTITUDE = 1,
     LABEL_TAUX_MONTEE = 2,
@@ -17,7 +25,7 @@ typedef struct {
     uint8_t sdi[2]; // not used. bits 10:9
     uint8_t label[8]; // octal label (reversed). Bits 8:1
 
-    uint8_t *total_word; // to be freed
+    uint8_t total_word[32];
 } t_a429_word;
 
 // 0 si nombre de "1" impair dans word, 1 sinon.
@@ -40,7 +48,7 @@ float BNR_decrypt(uint8_t *bits, uint8_t sigBits, uint32_t range);
     Encryption et decryption d'un mot BCD
 */
 uint8_t *BCD_encrypt(float resol, uint8_t digits, float value);
-float BCD_decrypt(uint8_t *bits, uint8_t digits, float resol);
+float BCD_decrypt(uint8_t *bits, uint8_t digits, float resol, uint8_t *ssm);
 
 /*
     Parité (32) calculée à la fin.
