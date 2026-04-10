@@ -146,19 +146,3 @@ void print_afdx_frame(t_afdx *f)
 
     printf("===================\n");
 }
-
-
-int main(void) {
-    t_afdx frame;
-
-    init_afdx(&frame);
-
-    // MAC exemple
-    uint8_t dest[6] = {0x03,0x00,0x00,0x00,0x00,0x01}; // multicast VL
-    uint8_t src[6]  = {0x02,0x00,0x00,0x00,0x00,0x01};
-
-    // Build
-    build_afdx_frame(&frame, "AFDX TEST", 9, src, dest);
-
-    print_afdx_frame(&frame);
-}

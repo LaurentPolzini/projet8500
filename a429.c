@@ -68,11 +68,18 @@ int getRange(unsigned int nbSigBits, float resol) {
 
 
 /*
-    Retourne number_to_encrypt encrypté en BNR, dans un tableau de unsigned int
+    Retourne value encrypté en BNR, dans un tableau de unsigned int
+        pas besoin de resolution si on a sigbits
 */
-uint8_t *BNR_encrypt(float resol, uint8_t sigBits, uint32_t range, float value) {
+uint8_t *BNR_encrypt(uint8_t sigBits, uint32_t range, float value) {
     uint8_t *out = calloc(sigBits, sizeof(uint8_t));
-    if (!out) exit(EXIT_FAILURE);
+    if (!out) { 
+        perror("Erreur allocation mémoire."); 
+        exit(EXIT_FAILURE); 
+    } 
+    if (value > range) {
+        value = (float) range; // valeur ne peut etre > à range. 
+    }
 
     int negative = value < 0;
     if (negative) value = -value;
@@ -82,7 +89,9 @@ uint8_t *BNR_encrypt(float resol, uint8_t sigBits, uint32_t range, float value) 
     for (int i = 0; i < sigBits; i++) {
         if (value >= weight) {
             out[i] = 1;
-            value -= weight;
+            value -= weight; // "soustractions jusqu'a val inferieure a resolution." 
+        } else {
+            out[i] = 0;
         }
         weight /= 2.0;
     }
@@ -215,7 +224,7 @@ t_a429_word get_A429_word(uint8_t label, float value, int etat) {
                 mot[11] = (etat >> 1) & 1;
             }
 
-            encoded = BNR_encrypt(1, 16, 40000, value);
+            encoded = BNR_encrypt(16, 40000, value);
 
             for (int i = 0; i < 16; i++)
                 mot[12 + i] = encoded[i];

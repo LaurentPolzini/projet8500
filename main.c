@@ -3,6 +3,8 @@
 #include <string.h>
 #include "pannel.h"
 #include "calculateur.h"
+#include "a429.h"
+#include "afdx.h"
 
 /* Prototypes des fonctions de tests */
 void tests_pannel(void);

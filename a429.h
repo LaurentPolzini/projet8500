@@ -41,7 +41,7 @@ int getRange(unsigned int nbSigBits, float resol);
 /*
     Encryption et decryption d'un mot BNR
 */
-uint8_t *BNR_encrypt(float resol, uint8_t sigBits, uint32_t range, float value);
+uint8_t *BNR_encrypt(uint8_t sigBits, uint32_t range, float value);
 float BNR_decrypt(uint8_t *bits, uint8_t sigBits, uint32_t range);
 
 /*

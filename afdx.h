@@ -4,6 +4,23 @@
 #include <stdint.h>
 #include <string.h>
 
+/*
+    Exemple utilisation : 
+
+    t_afdx frame;
+
+    init_afdx(&frame);
+
+    // MAC exemple
+    uint8_t dest[6] = {0x03,0x00,0x00,0x00,0x00,0x01}; // multicast VL
+    uint8_t src[6]  = {0x02,0x00,0x00,0x00,0x00,0x01};
+
+    // Build
+    build_afdx_frame(&frame, "AFDX TEST", 9, src, dest);
+
+    print_afdx_frame(&frame);
+*/
+
 #define AFDX_MAX_PAYLOAD 1471
 #define AFDX_FRAME_MAX   1538
 
@@ -29,7 +46,7 @@ typedef struct {
 
     uint8_t frame[AFDX_FRAME_MAX]; // frame totale
     uint16_t frame_size;
-    
+
 } t_afdx;
 
 // Rempli les champs preamble, sfd, eth_type et seq_number.
