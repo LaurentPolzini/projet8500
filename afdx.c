@@ -25,15 +25,93 @@ void init_afdx(t_afdx *f) {
     // EtherType IPv4 = 0x0800
     f->eth_type = 0x0800;
 
-    // Sequence number start
     f->seq_number = 1;
+}
+
+uint16_t ip_checksum(uint8_t *data, uint16_t length) {
+    uint32_t sum = 0;
+
+    // Addition des mots 16 bits
+    for (int i = 0; i + 1 < length; i += 2) {
+        uint16_t word = (data[i] << 8) | data[i + 1];
+        sum += word;
+    }
+
+    // Si longueur impaire → dernier byte
+    if (length % 2) {
+        uint16_t last = data[length - 1] << 8;
+        sum += last;
+    }
+
+    // Repliement des carries (très important)
+    while (sum >> 16) {
+        sum = (sum & 0xFFFF) + (sum >> 16);
+    }
+
+    // Complément à 1
+    return (uint16_t)(~sum);
+}
+
+void build_udp_header(t_afdx *f, uint16_t payload_len) {
+    uint16_t src_port = 1234;
+    uint16_t dest_port = 4321;
+
+    uint16_t length = 8 + payload_len + 1; // UDP + payload + seq number
+
+    f->udp[0] = (src_port >> 8) & 0xFF;
+    f->udp[1] = src_port & 0xFF;
+
+    f->udp[2] = (dest_port >> 8) & 0xFF;
+    f->udp[3] = dest_port & 0xFF;
+
+    f->udp[4] = (length >> 8) & 0xFF;
+    f->udp[5] = length & 0xFF;
+
+    f->udp[6] = 0; // checksum UDP, choix de ne pas le prendre en compte.
+    // On se fiera à celui d'IP
+    f->udp[7] = 0;
+}
+
+void build_ip_header(t_afdx *f, uint16_t payload_len, uint8_t *src_ip, uint8_t *dest_ip) {
+    uint16_t total_length = 20 + 8 + payload_len + 1;
+
+    f->ip[0] = 0x45;
+    f->ip[1] = 0x00;
+
+    f->ip[2] = (total_length >> 8) & 0xFF;
+    f->ip[3] = total_length & 0xFF;
+
+    f->ip[4] = 0x00; f->ip[5] = 0x00;
+    f->ip[6] = 0x00; f->ip[7] = 0x00;
+
+    f->ip[8] = 64;
+    f->ip[9] = 17;
+
+    // checksum temporairement à 0
+    f->ip[10] = 0;
+    f->ip[11] = 0;
+
+    // IP source
+    memcpy(&f->ip[12], src_ip, 4);
+
+    // IP dest
+    memcpy(&f->ip[16], dest_ip, 4);
+
+    // checksum IP, important.
+    uint16_t checksum = ip_checksum(f->ip, 20);
+
+    f->ip[10] = (checksum >> 8) & 0xFF;
+    f->ip[11] = checksum & 0xFF;
 }
 
 /*
     Concatene tous les champs de (t_afdx *f) dans "f.frame"
 */
-void build_afdx_frame(t_afdx *f, const char *payload, uint16_t payload_len, uint8_t *src, uint8_t *dest) {
+void build_afdx_frame(t_afdx *f, const char *payload, uint16_t payload_len, uint8_t functional_status, uint8_t *src, uint8_t *dest) {
     uint16_t offset = 0;
+    
+    build_udp_header(f, payload_len);
+    build_ip_header(f, payload_len, src, dest);
 
     // Preamble
     memcpy(f->frame + offset, f->preamble, 7);
@@ -63,6 +141,10 @@ void build_afdx_frame(t_afdx *f, const char *payload, uint16_t payload_len, uint
     // UDP
     memcpy(f->frame + offset, f->udp, 8);
     offset += 8;
+
+    // Functional Status
+    f->fs = functional_status;
+    f->frame[offset++] = f->fs;
 
     // Payload
     memcpy(f->payload, payload, payload_len);
@@ -130,6 +212,10 @@ void print_afdx_frame(t_afdx *f) {
     print_frame_hex(&(f->frame[offset]), 8);
     offset += 8;
 
+    printf("Data Functional Status : ");
+    fflush(stdout);
+    affiche_fs(f->fs);
+
     printf("Payload : ");
     int payload_len = f->frame_size - offset - 5; // SN + FCS
     print_frame_hex(&(f->frame[offset]), payload_len);
@@ -149,4 +235,24 @@ void print_afdx_frame(t_afdx *f) {
     print_frame_hex(&(f->frame[offset]), 4);
 
     printf("===================\n");
+}
+
+void affiche_fs(uint8_t fs) {
+    switch (fs)
+    {
+    case ND:
+        printf("No data\n");
+        break;
+    case NO:
+        printf("Normal operation\n");
+        break;
+    case FT:
+        printf("Functional test\n");
+        break;
+    case NCD:
+        printf("No computed data\n");
+        break;
+    default:
+        break;
+    }
 }

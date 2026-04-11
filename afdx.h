@@ -26,6 +26,13 @@ extern uint8_t adr_mac_calc[6];
 #define AFDX_MAX_PAYLOAD 1471
 #define AFDX_FRAME_MAX   1538
 
+typedef enum {
+    ND = 0, // no data
+    NO = 1, // normal operation
+    FT = 2, // functionnal test
+    NCD = 3 // no computed data
+} FS;
+
 
 typedef struct {
 
@@ -42,6 +49,7 @@ typedef struct {
     uint8_t ip[20];
     uint8_t udp[8];
 
+    uint8_t fs;
     uint8_t payload[AFDX_MAX_PAYLOAD];
 
     uint8_t seq_number;
@@ -56,12 +64,12 @@ typedef struct {
 void init_afdx(t_afdx *f);
 
 // Concatenation des champs dans le tableau f.frame
-void build_afdx_frame(t_afdx *f, const char *payload, uint16_t payload_len, uint8_t *src, uint8_t *dest);
+void build_afdx_frame(t_afdx *f, const char *payload, uint16_t payload_len, uint8_t functional_status, uint8_t *src, uint8_t *dest);
 
 // Cycle de 0 à 255
 void update_seq(t_afdx *f);
 
 void print_afdx_frame(t_afdx *f);
-
+void affiche_fs(uint8_t fs);
 
 #endif
