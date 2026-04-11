@@ -9,6 +9,8 @@
 /* Prototypes des fonctions de tests */
 void tests_pannel(void);
 void tests_calculateur(void);
+void tests_a429(void);
+void tests_afdx(void);
 
 static void run_simulation(void)
 {
@@ -71,6 +73,8 @@ int main(int argc, char *argv[])
     if (argc > 1 && strcmp(argv[1], "tests") == 0) {
         tests_pannel();
         tests_calculateur();
+        tests_a429();
+        tests_afdx();
         return 0;
     }
 

@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <assert.h>
+#include <math.h>
 #include "pannel.h"
 #include "calculateur.h"
 

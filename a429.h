@@ -28,10 +28,12 @@ typedef struct {
     uint8_t total_word[32];
 } t_a429_word;
 
+void init_word(t_a429_word *w);
+
 // 0 si nombre de "1" impair dans word, 1 sinon.
-// 11 "1" => 0. 
+// 3 "1" => 0. 
 // 0 "1" => 1.
-uint8_t calculParite(uint8_t *word) ;
+uint8_t calculParite(uint8_t *word, unsigned int size) ;
 
 // Trouve le 3eme paramètre selon les 2 connus.
 int getNbSigBits(unsigned int range, float resol);
@@ -42,7 +44,7 @@ int getRange(unsigned int nbSigBits, float resol);
     Encryption et decryption d'un mot BNR
 */
 uint8_t *BNR_encrypt(uint8_t sigBits, uint32_t range, float value);
-float BNR_decrypt(uint8_t *bits, uint8_t sigBits, uint32_t range);
+float BNR_decrypt(uint8_t *bits, uint8_t sigBits, uint32_t range, uint8_t sign);
 
 /*
     Encryption et decryption d'un mot BCD
@@ -60,6 +62,13 @@ float BCD_decrypt(uint8_t *bits, uint8_t digits, float resol, uint8_t *ssm);
     Label (8:1)
 */
 t_a429_word get_A429_word(uint8_t label, float value, int etat);
+
+// label octal inversé.
+int get_true_label(t_a429_word word);
+
+// obtention de la valeur encodé dans le mot a429 "w"
+float get_value_from_a429(t_a429_word w);
+
 
 void afficheA429_word(t_a429_word word);
 

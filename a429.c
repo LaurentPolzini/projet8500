@@ -44,10 +44,10 @@ unsigned int angle_max = 16; // ex : 15.9°. 9 bits de "spare" en BCD
 
 // nombre impair de "1" => 1. Sinon, 0.
 // J'assume que 0 "1" est impair.
-uint8_t calculParite(uint8_t *word) {
+uint8_t calculParite(uint8_t *word, unsigned int size) {
     uint8_t parity = 1; // odd parity
 
-    for (int i = 0; i < 32; i++) {
+    for (unsigned int i = 0; i < size; i++) {
         parity ^= word[i];
     }
 
@@ -63,12 +63,12 @@ float getResol(unsigned int range, unsigned int nbSigBits) {
 }
 
 int getRange(unsigned int nbSigBits, float resol) {
-    return (resol * pow(2, nbSigBits));
+    return round(resol * pow(2, nbSigBits));
 }
 
 
 /*
-    Retourne value encrypté en BNR, dans un tableau de unsigned int
+    Retourne value encrypté en BNR, dans un tableau de uint8
         pas besoin de resolution si on a sigbits
 */
 uint8_t *BNR_encrypt(uint8_t sigBits, uint32_t range, float value) {
@@ -116,17 +116,16 @@ uint8_t *BNR_encrypt(uint8_t sigBits, uint32_t range, float value) {
 
 /*
     Fonction inverse
+    Sign = negative value
 */
-float BNR_decrypt(uint8_t *bits, uint8_t sigBits, uint32_t range) {
+float BNR_decrypt(uint8_t *bits, uint8_t sigBits, uint32_t range, uint8_t sign) {
     uint8_t temp[sigBits];
 
     // copie
     for (int i = 0; i < sigBits; i++)
-        temp[i] = bits[i];
+        temp[i] = bits[sigBits - 1 - i];
 
-    int negative = temp[0]; // MSB
-
-    if (negative) {
+    if (sign == 1) {
         // -1
         for (int i = sigBits - 1; i >= 0; i--) {
             if (temp[i] == 1) {
@@ -145,13 +144,13 @@ float BNR_decrypt(uint8_t *bits, uint8_t sigBits, uint32_t range) {
     float value = 0.0;
     float weight = range / 2.0;
 
-    for (int i = 0; i < sigBits; i++) {
+    for (int i = sigBits - 1; i >= 0 ; --i) {
         if (temp[i])
             value += weight;
         weight /= 2.0;
     }
 
-    return negative ? -value : value;
+    return sign ? -value : value;
 }
 
 
@@ -163,7 +162,7 @@ uint8_t *BCD_encrypt(float resol, uint8_t digits, float value) {
     if (!out) exit(EXIT_FAILURE);
 
     // apres application resolution
-    int scaled = (int)(fabs(value) / resol + 0.5);
+    int scaled = (int) round(fabs(value) / resol);
 
     // encodage de chacun des chiffres du nombre
     for (int d = digits - 1; d >= 0; --d) {
@@ -201,6 +200,34 @@ float BCD_decrypt(uint8_t *bits, uint8_t digits, float resol, uint8_t *ssm) {
     return value * resol;
 }
 
+
+uint8_t parite; // Odd (11 "1" => "0"), bit 32
+    uint8_t ssm[2]; // Sign Status Matrix, bits 31:30
+    uint8_t pn; // positif negatif, bit 29
+    uint8_t data[18]; // champs de données, label determine si BNR, BCD. bits 28:11
+    uint8_t sdi[2]; // not used. bits 10:9
+    uint8_t label[8]; // octal label (reversed). Bits 8:1
+
+    uint8_t total_word[32];
+
+
+void init_word(t_a429_word *w) {
+    w->parite = 0;
+    for (unsigned int i = 0 ; i < sizeMot ; ++i) {
+        if (i < 2) {
+            w->ssm[i] = 0;
+            w->sdi[i] = 0;
+        }
+        if (i < 8) {
+            w->label[i] = 0;
+        }
+        if (i < 18) {
+            w->data[i] = 0;
+        }
+        w->total_word[i] = 0;
+    }
+}
+
 /// @brief compose un mot arinc 429
 /// @param label 1, 2 ou 3. Altitude, taux montée, angle attaque
 /// @param value la valeur a encoder
@@ -209,75 +236,89 @@ float BCD_decrypt(uint8_t *bits, uint8_t digits, float resol, uint8_t *ssm) {
 t_a429_word get_A429_word(uint8_t label, float value, int etat) {
 
     t_a429_word w;
-    uint8_t *mot = calloc(32, sizeof(uint8_t));
+    init_word(&w);
+
+    // Positif ou negatif
+    w.pn = value < 0;
+    
+    // SDI. Unused
+    w.sdi[0] = 0;
+    w.sdi[1] = 0;
+    w.total_word[9] = 0;
+    w.total_word[8] = 0;
 
     uint8_t ssm[2] = {1, 0}; // NCD par défaut
     uint8_t *encoded = NULL;
 
     switch (label) {
-
         case LABEL_ALTITUDE:
-            mot[7] = 1;
+            w.total_word[7] = 1;
+            w.total_word[28] = w.pn;
 
             if (etat >= 0) {
-                mot[10] = etat & 1;
-                mot[11] = (etat >> 1) & 1;
+                w.total_word[10] = etat & 1;
+                w.total_word[11] = (etat >> 1) & 1;
             }
 
             encoded = BNR_encrypt(16, 40000, value);
+            if (value == BNR_decrypt(encoded, 16, 40000, value < 0)) {
+                ssm[1] = 1; // NORM
+            } else {
+                ssm[0] = 0; // FAIL
+            }
 
+            // bits 11 à 28 (bit 29 = signe value)
             for (int i = 0; i < 16; i++)
-                mot[12 + i] = encoded[i];
+                // bits 28 à 12 (11 et 10 à 0)
+                w.total_word[27 - i] = encoded[i];
 
             break;
 
         case LABEL_TAUX_MONTEE:
-            mot[6] = 1;
+            w.total_word[6] = 1;
 
             ssm[0] = (value < 0);
             ssm[1] = (value < 0);
 
             encoded = BCD_encrypt(0.1, 4, value);
 
-            for (int i = 0; i < 16; i++)
-                mot[12 + i] = encoded[i];
+            for (int i = 0; i < 20; i++)
+                w.total_word[28 - i] = encoded[i];
 
             break;
 
         case LABEL_ANGLE_ATTAK:
-            mot[6] = 1;
-            mot[7] = 1;
+            w.total_word[6] = 1;
+            w.total_word[7] = 1;
 
             ssm[0] = (value < 0);
             ssm[1] = (value < 0);
 
             encoded = BCD_encrypt(0.1, 3, value);
 
-            for (int i = 0; i < 12; i++)
-                mot[12 + i] = encoded[i];
+            for (int i = 0; i < 20; i++)
+                w.total_word[28 - i] = encoded[i];
 
             break;
     }
 
     // SSM
-    mot[29] = ssm[0];
-    mot[30] = ssm[1];
+    w.ssm[0] = ssm[0];
+    w.ssm[1] = ssm[1];
+    w.total_word[29] = ssm[0];
+    w.total_word[30] = ssm[1];
 
+    // Data
+    memcpy(w.data, encoded, 16);
+
+    // Label
+    memcpy(w.label, w.total_word, 8);
+ 
     // Parité
-    mot[31] = calculParite(mot);
-
-    // Remplissage struct
-    w.parite = mot[31];
-    memcpy(w.ssm, &mot[29], 2);
-    w.pn = mot[28];
-    memcpy(w.data, &mot[12], 18);
-    memcpy(w.sdi, &mot[9], 2);
-    memcpy(w.label, &mot[0], 8);
-
-    memcpy(w.total_word, mot, 32);
+    w.parite = calculParite(w.total_word, sizeMot);
+    w.total_word[31] = w.parite;
 
     free(encoded);
-    free(mot);
 
     return w;
 }
@@ -290,12 +331,10 @@ int get_true_label(t_a429_word word) {
     return result;
 }
 
-float get_value_from_a429(t_a429_word w)
-{
+float get_value_from_a429(t_a429_word w) {
     switch (get_true_label(w)) {
-
         case LABEL_ALTITUDE:
-            return (int) round(BNR_decrypt(w.data, 16, 40000));
+            return (int) round(BNR_decrypt(w.data, 16, 40000, w.pn));
 
         case LABEL_TAUX_MONTEE:
             return ((int) (BCD_decrypt(w.data, 4, 0.1, w.ssm) * 10)) / 10.0; // on garde le dizieme
@@ -314,11 +353,11 @@ void afficheMot(uint8_t *word, int size)
 {
     int s = (size == 0) ? 32 : size;
 
-    for (int i = 0; i < s; i++) {
+    for (int i = s - 1 ; i >= 0; --i) {
         printf("%d", word[i]);
 
         // espace visuel toutes les 4 bits
-        if ((i + 1) % 4 == 0)
+        if (i % 4 == 0)
             printf(" ");
         
         fflush(stdout);
@@ -327,16 +366,16 @@ void afficheMot(uint8_t *word, int size)
 }
 
 void afficheA429_word(t_a429_word word) {
-    printf("=== A429 WORD ===\n");
+    printf("\n=== A429 WORD ===\n");
 
     printf("Parité : %d\n", word.parite);
 
     printf("SSM : ");
     afficheMot(word.ssm, 2);
 
-    printf("PN : %d\n", word.pn);
+    printf("Negatif : %d\n", word.pn);
 
-    printf("DATA : ");
+    printf("DATA (%s) : ", get_true_label(word) == LABEL_ALTITUDE ? "BNR" : "BCD");
     afficheMot(word.data, 18);
 
     printf("SDI : ");
@@ -363,4 +402,5 @@ void afficheA429_word(t_a429_word word) {
         printf("Angle d'attaque : %.1f°\n", val);
         break;
     }
+    printf("\n");
 }

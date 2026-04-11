@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-std=c99 -Wextra -Wall -Werror -pedantic 
+CFLAGS=-std=c99 -Wextra -Wall -Werror -pedantic
 LDFLAGS=-lm
 
 ifeq ($(DEBUG),yes)
@@ -40,4 +40,6 @@ agregateur.o: agregateur.h calculateur.h
 a429.o: a429.h
 afdx.o: afdx.h
 testsPannel.o: testsPannel.c pannel.h
-testsCalculateur.o: testsCalculateur.c calculateur.h pannel.h 
+testsCalculateur.o: testsCalculateur.c calculateur.h pannel.h
+tests_a429.o: tests_a429.c a429.h
+tests_afdx.o: tests_afdx.c afdx.h
