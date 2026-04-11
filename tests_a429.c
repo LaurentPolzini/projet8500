@@ -5,6 +5,8 @@
 
 void tests_a429(void)
 {
+    printf("==== TESTS A429 ====\n\n");
+
     uint8_t ssm[2] = {0,0};
     (void) ssm;
 
@@ -108,6 +110,6 @@ void tests_a429(void)
 
     
 
-    printf("tests arinc 429 OK\n");
+    printf("tests arinc 429 OK\n\n");
     return;
 }

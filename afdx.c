@@ -1,6 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
+#include <string.h>
 #include "afdx.h"
+
+uint8_t adr_mac_agreg[6] = {0, 0, 0, 0, 0, 1}; // @ Mac = 1
+uint8_t adr_mac_calc[6] = {0, 0, 0, 0, 0, 2}; // @ Mac = 2
 
 /*
     Rempli les champs "de base" de la trame
@@ -94,8 +99,7 @@ void print_frame_hex(uint8_t *frame, uint16_t size) {
     printf("\n");
 }
 
-void print_afdx_frame(t_afdx *f)
-{
+void print_afdx_frame(t_afdx *f) {
     int offset = 0;
 
     printf("=== AFDX FRAME ===\n");

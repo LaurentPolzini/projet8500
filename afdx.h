@@ -2,7 +2,6 @@
 #define __AFDX_H__
 
 #include <stdint.h>
-#include <string.h>
 
 /*
     Exemple utilisation : 
@@ -21,8 +20,12 @@
     print_afdx_frame(&frame);
 */
 
+extern uint8_t adr_mac_agreg[6];
+extern uint8_t adr_mac_calc[6];
+
 #define AFDX_MAX_PAYLOAD 1471
 #define AFDX_FRAME_MAX   1538
+
 
 typedef struct {
 
@@ -57,6 +60,8 @@ void build_afdx_frame(t_afdx *f, const char *payload, uint16_t payload_len, uint
 
 // Cycle de 0 à 255
 void update_seq(t_afdx *f);
+
+void print_afdx_frame(t_afdx *f);
 
 
 #endif
