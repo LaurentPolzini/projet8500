@@ -17,4 +17,10 @@ typedef struct {
 /* Algorithme principal */
 void calculateur_run(const CalcInput *in, CalcOutput *out);
 
+PanelInputs get_calc_inputs(CalcInput ci);
+
+PanelDisplay get_calc_state_in(CalcInput ci);
+
+PanelDisplay get_calc_state_out(CalcOutput co);
+
 #endif

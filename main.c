@@ -49,6 +49,26 @@ static void run_simulation(void)
 
         CalcOutput cout;
         calculateur_run(&cin, &cout);
+        PanelDisplay panelOut = get_calc_state_out(cout);
+
+        // traduction en a429
+        t_a429_word w_alt = get_A429_word(LABEL_ALTITUDE, panelOut.altitude_ft, panelOut.mode);
+        t_a429_word w_vz  = get_A429_word(LABEL_TAUX_MONTEE, panelOut.vitesse_mpm, 1);
+
+        // a429 stockés en AFDX et affichage
+        t_afdx w_afdx;
+        init_afdx(&w_afdx);
+        build_afdx_frame(&w_afdx, get_total_A429word(&w_alt), getSizeMot(), NO, adr_mac_calc, adr_mac_agreg);
+        //print_afdx_frame(&w_afdx);
+        afficheA429_word(word_from_a429_frame(w_afdx.payload));
+
+        update_seq(&w_afdx);
+        build_afdx_frame(&w_afdx, get_total_A429word(&w_vz), getSizeMot(), NO, adr_mac_calc, adr_mac_agreg);
+        //print_afdx_frame(&w_afdx);
+        afficheA429_word(word_from_a429_frame(w_afdx.payload));
+
+        update_seq(&w_afdx);
+        
         panel_set_display(panel, &cout.state_out);
 
         PanelDisplay outd = panel_get_display(panel);

@@ -13,6 +13,10 @@ float resol_taux_montee_angle_attak = 0.1;
 unsigned int taux_montee_max = 800; // 800 m/min. Ex : 799.9. 5 bits de "spare" (a droite) en BCD.
 unsigned int angle_max = 16; // ex : 15.9°. 9 bits de "spare" en BCD
 
+unsigned int getSizeMot(void) {
+    return sizeMot;
+}
+
 /*
     Découpage BCD (par blocs de 4 bits, on veut pouvoir ecrire 8): 
         29:26 chiffre le plus significatif ("8" de 800)
@@ -73,31 +77,20 @@ int getRange(unsigned int nbSigBits, float resol) {
 */
 uint8_t *BNR_encrypt(uint8_t sigBits, uint32_t range, float value) {
     uint8_t *out = calloc(sigBits, sizeof(uint8_t));
-    if (!out) { 
-        perror("Erreur allocation mémoire."); 
-        exit(EXIT_FAILURE); 
-    } 
-    if (value > range) {
-        value = (float) range; // valeur ne peut etre > à range. 
-    }
+    if (!out) exit(EXIT_FAILURE);
 
     int negative = value < 0;
     if (negative) value = -value;
 
-    float weight = range / 2.0;
+    float resol = getResol(range, sigBits);
+    int scaled = (int) round(value / resol); // conversion en entier
 
     for (int i = 0; i < sigBits; i++) {
-        if (value >= weight) {
-            out[i] = 1;
-            value -= weight; // "soustractions jusqu'a val inferieure a resolution." 
-        } else {
-            out[i] = 0;
-        }
-        weight /= 2.0;
+        out[sigBits - 1 - i] = (scaled >> i) & 1;
     }
 
+    // complément à 2 si négatif
     if (negative) {
-        // complément à 2
         for (int i = 0; i < sigBits; i++)
             out[i] = !out[i];
 
@@ -119,38 +112,22 @@ uint8_t *BNR_encrypt(uint8_t sigBits, uint32_t range, float value) {
     Sign = negative value
 */
 float BNR_decrypt(uint8_t *bits, uint8_t sigBits, uint32_t range, uint8_t sign) {
-    uint8_t temp[sigBits];
+    int value = 0;
 
-    // copie
-    for (int i = 0; i < sigBits; i++)
-        temp[i] = bits[sigBits - 1 - i];
-
-    if (sign == 1) {
-        // -1
-        for (int i = sigBits - 1; i >= 0; i--) {
-            if (temp[i] == 1) {
-                temp[i] = 0;
-                break;
-            } else {
-                temp[i] = 1;
-            }
-        }
-
-        // inversion
-        for (int i = 0; i < sigBits; i++)
-            temp[i] = !temp[i];
+    // reconstruire l'entier
+    for (int i = 0; i < sigBits; i++) {
+        value = (value << 1) | bits[i];
     }
 
-    float value = 0.0;
-    float weight = range / 2.0;
-
-    for (int i = sigBits - 1; i >= 0 ; --i) {
-        if (temp[i])
-            value += weight;
-        weight /= 2.0;
+    // gestion du complément à 2 (si négatif)
+    if (sign) {
+        value -= (1 << sigBits);
     }
 
-    return sign ? -value : value;
+    // conversion en valeur physique
+    float resol = getResol(range, sigBits);
+
+    return value * resol;
 }
 
 
@@ -323,6 +300,10 @@ t_a429_word get_A429_word(uint8_t label, float value, int etat) {
     return w;
 }
 
+uint8_t *get_total_A429word(t_a429_word *w) {
+    return w->total_word;
+}
+
 int get_true_label(t_a429_word word) {
     int result = 0;
     for (int i = 0 ; i < 8 ; ++i) {
@@ -393,14 +374,51 @@ void afficheA429_word(t_a429_word word) {
     switch (get_true_label(word))
     {
     case LABEL_ALTITUDE:
-        printf("Altitude : %d pieds\n", (int) val);
+        printf("\t => Altitude : %d pieds\n", (int) val);
         break;
     case LABEL_TAUX_MONTEE:
-        printf("Taux de montée : %.1f m/min\n", val);
+        printf("\t => Taux de montée : %.1f m/min\n", val);
         break;
     case LABEL_ANGLE_ATTAK:
-        printf("Angle d'attaque : %.1f°\n", val);
+        printf("\t => Angle d'attaque : %.1f°\n", val);
         break;
     }
     printf("\n");
 }
+
+t_a429_word word_from_a429_frame(uint8_t *frame) {
+    t_a429_word w;
+    init_word(&w);
+
+    // 1. Copier le mot complet
+    for (int i = 0; i < 32; i++) {
+        w.total_word[i] = frame[i];
+    }
+
+    // 2. Parité (bit 32)
+    w.parite = frame[31];
+
+    // 3. SSM (bits 31:30)
+    w.ssm[0] = frame[29];
+    w.ssm[1] = frame[30];
+
+    // 4. Signe (bit 29)
+    w.pn = frame[28];
+
+    // 5. DATA (bits 28 à 11)
+    for (int i = 0; i < 16; i++) {
+        w.data[i] = frame[27 - i];
+    }
+
+    // 6. SDI (bits 10:9)
+    w.sdi[0] = frame[8];
+    w.sdi[1] = frame[9];
+
+    // 7. LABEL (bits 8:1)
+    for (int i = 0; i < 8; i++) {
+        w.label[i] = frame[i];
+    }
+
+    return w;
+}
+

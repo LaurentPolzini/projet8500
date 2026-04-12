@@ -104,3 +104,16 @@ void calculateur_run(const CalcInput *in, CalcOutput *out)
 
     out->state_out.altitude_ft = new_alt;
 }
+
+PanelInputs get_calc_inputs(CalcInput ci) {
+    return ci.inputs;
+}
+
+PanelDisplay get_calc_state_in(CalcInput ci) {
+    return ci.state_in;
+}
+
+PanelDisplay get_calc_state_out(CalcOutput co) {
+    return co.state_out;
+}
+

@@ -64,12 +64,12 @@ typedef struct {
 void init_afdx(t_afdx *f);
 
 // Concatenation des champs dans le tableau f.frame
-void build_afdx_frame(t_afdx *f, const char *payload, uint16_t payload_len, uint8_t functional_status, uint8_t *src, uint8_t *dest);
+void build_afdx_frame(t_afdx *f, const uint8_t *payload, uint16_t payload_len, uint8_t functional_status, uint8_t *src, uint8_t *dest);
 
 // Cycle de 0 à 255
 void update_seq(t_afdx *f);
 
 void print_afdx_frame(t_afdx *f);
-void affiche_fs(uint8_t fs);
+void affiche_functionnal_status(uint8_t fs);
 
 #endif

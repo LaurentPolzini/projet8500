@@ -127,7 +127,7 @@ int panel_get_altitude_desiree(Panel pan) {
     return (pan->g_inputs).altitude_desiree_ft;
 }
 
-float panel_get_taux_monte(Panel pan) {
+float panel_get_taux_montee(Panel pan) {
     return (pan->g_inputs).taux_montee_mpm;
 }
 

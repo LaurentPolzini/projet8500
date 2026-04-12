@@ -30,6 +30,8 @@ typedef struct {
 
 void init_word(t_a429_word *w);
 
+unsigned int getSizeMot(void);
+
 // 0 si nombre de "1" impair dans word, 1 sinon.
 // 3 "1" => 0. 
 // 0 "1" => 1.
@@ -63,14 +65,17 @@ float BCD_decrypt(uint8_t *bits, uint8_t digits, float resol, uint8_t *ssm);
 */
 t_a429_word get_A429_word(uint8_t label, float value, int etat);
 
+uint8_t *get_total_A429word(t_a429_word *w);
+
 // label octal inversé.
 int get_true_label(t_a429_word word);
 
 // obtention de la valeur encodé dans le mot a429 "w"
 float get_value_from_a429(t_a429_word w);
 
-
 void afficheA429_word(t_a429_word word);
+
+t_a429_word word_from_a429_frame(uint8_t *frame);
 
 
 #endif

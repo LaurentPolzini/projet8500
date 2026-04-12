@@ -19,7 +19,7 @@ void init_afdx(t_afdx *f) {
     for (int i = 0; i < 7; i++)
         f->preamble[i] = 0xAA;
 
-    // SFD = 0xAB
+    // SFD 
     f->sfd = 0xAB; // 1010 1011
 
     // EtherType IPv4 = 0x0800
@@ -58,7 +58,7 @@ void build_udp_header(t_afdx *f, uint16_t payload_len) {
 
     uint16_t length = 8 + payload_len + 1; // UDP + payload + seq number
 
-    f->udp[0] = (src_port >> 8) & 0xFF;
+    f->udp[0] = (src_port >> 8) & 0xFF; // séparation des octets
     f->udp[1] = src_port & 0xFF;
 
     f->udp[2] = (dest_port >> 8) & 0xFF;
@@ -81,11 +81,12 @@ void build_ip_header(t_afdx *f, uint16_t payload_len, uint8_t *src_ip, uint8_t *
     f->ip[2] = (total_length >> 8) & 0xFF;
     f->ip[3] = total_length & 0xFF;
 
-    f->ip[4] = 0x00; f->ip[5] = 0x00;
-    f->ip[6] = 0x00; f->ip[7] = 0x00;
+    for (int i = 4 ; i < 8 ; ++i) {
+        f->ip[i] = 0x00;
+    }
 
-    f->ip[8] = 64;
-    f->ip[9] = 17;
+    f->ip[8] = 64; // TTL (64 sauts, factice)
+    f->ip[9] = 17; // 17 = protocole UDP
 
     // checksum temporairement à 0
     f->ip[10] = 0;
@@ -107,7 +108,7 @@ void build_ip_header(t_afdx *f, uint16_t payload_len, uint8_t *src_ip, uint8_t *
 /*
     Concatene tous les champs de (t_afdx *f) dans "f.frame"
 */
-void build_afdx_frame(t_afdx *f, const char *payload, uint16_t payload_len, uint8_t functional_status, uint8_t *src, uint8_t *dest) {
+void build_afdx_frame(t_afdx *f, const uint8_t *payload, uint16_t payload_len, uint8_t functional_status, uint8_t *src, uint8_t *dest) {
     uint16_t offset = 0;
     
     build_udp_header(f, payload_len);
@@ -214,7 +215,7 @@ void print_afdx_frame(t_afdx *f) {
 
     printf("Data Functional Status : ");
     fflush(stdout);
-    affiche_fs(f->fs);
+    affiche_functionnal_status(f->fs);
 
     printf("Payload : ");
     int payload_len = f->frame_size - offset - 5; // SN + FCS
@@ -237,7 +238,7 @@ void print_afdx_frame(t_afdx *f) {
     printf("===================\n");
 }
 
-void affiche_fs(uint8_t fs) {
+void affiche_functionnal_status(uint8_t fs) {
     switch (fs)
     {
     case ND:
