@@ -40,8 +40,27 @@ static void run_simulation(void)
     printf("Simulation vers %d ft\n", altitude_target);
 
     for (int step = 0; step < 100; ++step) {
+        // ---- Agregateur vers Calculateur
+        printf("Envoie des données AFDX de l'agregateur vers le calculateur\n");
         PanelInputs in_vals  = panel_get_inputs(panel);
         PanelDisplay st_vals = panel_get_display(panel);
+
+        t_a429_word w_alt_desiree = get_A429_word(LABEL_ALTITUDE, in_vals.altitude_desiree_ft, st_vals.mode);
+        t_a429_word w_taux_desire = get_A429_word(LABEL_TAUX_MONTEE, in_vals.taux_montee_mpm, 0); // etat ignoré car pas LABEL_ALT
+        t_a429_word w_angle_desire = get_A429_word(LABEL_ANGLE_ATTAK, in_vals.angle_deg, 0);
+
+        t_afdx w_afdx_agr_to_calc;
+        init_afdx(&w_afdx_agr_to_calc);
+        build_afdx_frame(&w_afdx_agr_to_calc, get_total_A429word(&w_alt_desiree), getSizeMot(), NO, adr_mac_agreg, adr_mac_calc);
+        //afficheA429_word(word_from_a429_frame(w_afdx_agr_to_calc.payload));
+
+        update_seq(&w_afdx_agr_to_calc);
+        build_afdx_frame(&w_afdx_agr_to_calc, get_total_A429word(&w_taux_desire), getSizeMot(), NO, adr_mac_agreg, adr_mac_calc);
+        //afficheA429_word(word_from_a429_frame(w_afdx_agr_to_calc.payload));
+
+        update_seq(&w_afdx_agr_to_calc);
+        build_afdx_frame(&w_afdx_agr_to_calc, get_total_A429word(&w_angle_desire), getSizeMot(), NO, adr_mac_agreg, adr_mac_calc);
+        //afficheA429_word(word_from_a429_frame(w_afdx_agr_to_calc.payload));
 
         CalcInput cin;
         cin.inputs   = in_vals;
@@ -51,23 +70,23 @@ static void run_simulation(void)
         calculateur_run(&cin, &cout);
         PanelDisplay panelOut = get_calc_state_out(cout);
 
+        // ---- Calculateur vers Agregateur
         // traduction en a429
+        printf("Envoie des données AFDX du calculateur vers l'agregateur\n");
         t_a429_word w_alt = get_A429_word(LABEL_ALTITUDE, panelOut.altitude_ft, panelOut.mode);
         t_a429_word w_vz  = get_A429_word(LABEL_TAUX_MONTEE, panelOut.vitesse_mpm, 1);
 
         // a429 stockés en AFDX et affichage
-        t_afdx w_afdx;
-        init_afdx(&w_afdx);
-        build_afdx_frame(&w_afdx, get_total_A429word(&w_alt), getSizeMot(), NO, adr_mac_calc, adr_mac_agreg);
-        //print_afdx_frame(&w_afdx);
-        afficheA429_word(word_from_a429_frame(w_afdx.payload));
+        t_afdx w_afdx_calc_to_agreg;
+        init_afdx(&w_afdx_calc_to_agreg);
+        build_afdx_frame(&w_afdx_calc_to_agreg, get_total_A429word(&w_alt), getSizeMot(), NO, adr_mac_calc, adr_mac_agreg);
+        afficheA429_word(word_from_a429_frame(w_afdx_calc_to_agreg.payload));
 
-        update_seq(&w_afdx);
-        build_afdx_frame(&w_afdx, get_total_A429word(&w_vz), getSizeMot(), NO, adr_mac_calc, adr_mac_agreg);
-        //print_afdx_frame(&w_afdx);
-        afficheA429_word(word_from_a429_frame(w_afdx.payload));
+        update_seq(&w_afdx_calc_to_agreg);
+        build_afdx_frame(&w_afdx_calc_to_agreg, get_total_A429word(&w_vz), getSizeMot(), NO, adr_mac_calc, adr_mac_agreg);
+        afficheA429_word(word_from_a429_frame(w_afdx_calc_to_agreg.payload));
 
-        update_seq(&w_afdx);
+        update_seq(&w_afdx_calc_to_agreg);
         
         panel_set_display(panel, &cout.state_out);
 
