@@ -12,6 +12,7 @@ void tests_a429(void)
 
     //---- parité ----
     uint8_t word[3];
+    (void) word;
     for (int i = 0 ; i < 3 ; ++i) word[i] = 1;
     assert(calculParite(word, 3) == 0);
     word[0] = 0;
