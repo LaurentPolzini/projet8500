@@ -20,10 +20,14 @@ ifeq ($(DEBUG),yes)
 else
 	@echo "Generating in release mode"
 endif
-	@$(MAKE) $(EXEC)
+	@$(MAKE) $(EXEC) avionique_win.exe
 
 $(EXEC): $(OBJ)
 	@$(CC) -o $@ $^ $(LDFLAGS)
+
+avionique_win.exe:
+	$(CC) $(CFLAGS) winui/winui.c pannel.c calculateur.c agregateur.c \
+	-o avionique_win.exe -luser32 -lgdi32
 
 %.o: %.c
 	@$(CC) -o $@ -c $< $(CFLAGS)
@@ -32,7 +36,7 @@ $(EXEC): $(OBJ)
 
 clean:
 	@rm -rf *.o $(EXEC) *.exe
-	
+
 main.o: pannel.h calculateur.h afdx.h a429.h
 pannel.o: pannel.h
 calculateur.o: calculateur.h pannel.h
