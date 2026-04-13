@@ -76,10 +76,11 @@ static void run_simulation(void)
         t_a429_word w_alt = get_A429_word(LABEL_ALTITUDE, panelOut.altitude_ft, panelOut.mode);
         t_a429_word w_vz  = get_A429_word(LABEL_TAUX_MONTEE, panelOut.vitesse_mpm, 1);
 
-        // a429 stockés en AFDX et affichage
+        // a429 stockés en AFDX pour la redoncance
         t_afdx w_afdx_calc_to_agreg;
         init_afdx(&w_afdx_calc_to_agreg);
         build_afdx_frame(&w_afdx_calc_to_agreg, get_total_A429word(&w_alt), getSizeMot(), NO, adr_mac_calc, adr_mac_agreg);
+        // les mots a429 sont aussi envoyés en brut (temps réel fort)
         afficheA429_word(word_from_a429_frame(w_afdx_calc_to_agreg.payload));
 
         update_seq(&w_afdx_calc_to_agreg);

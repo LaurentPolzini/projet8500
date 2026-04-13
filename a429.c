@@ -177,17 +177,6 @@ float BCD_decrypt(uint8_t *bits, uint8_t digits, float resol, uint8_t *ssm) {
     return value * resol;
 }
 
-
-uint8_t parite; // Odd (11 "1" => "0"), bit 32
-    uint8_t ssm[2]; // Sign Status Matrix, bits 31:30
-    uint8_t pn; // positif negatif, bit 29
-    uint8_t data[18]; // champs de données, label determine si BNR, BCD. bits 28:11
-    uint8_t sdi[2]; // not used. bits 10:9
-    uint8_t label[8]; // octal label (reversed). Bits 8:1
-
-    uint8_t total_word[32];
-
-
 void init_word(t_a429_word *w) {
     w->parite = 0;
     for (unsigned int i = 0 ; i < sizeMot ; ++i) {

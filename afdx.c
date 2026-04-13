@@ -28,32 +28,29 @@ void init_afdx(t_afdx *f) {
     f->seq_number = 1;
 }
 
-uint16_t ip_checksum(uint8_t *data, uint16_t length) {
-    uint32_t sum = 0;
+uint16_t ip_checksum(uint8_t *donnees, uint16_t taille) {
+    uint32_t somme = 0;
 
-    // Addition des mots 16 bits
-    for (int i = 0; i + 1 < length; i += 2) {
-        uint16_t word = (data[i] << 8) | data[i + 1];
-        sum += word;
+    for (uint16_t i = 0; i < taille; i += 2) {
+        uint16_t mot = donnees[i] << 8;
+
+        if (i + 1 < taille) {
+            mot |= donnees[i + 1];
+        }
+
+        somme += mot;
     }
 
-    // Si longueur impaire → dernier byte
-    if (length % 2) {
-        uint16_t last = data[length - 1] << 8;
-        sum += last;
+    // rester sur 16 bits, on ajoute les dépassements (carries)
+    while (somme > 0xFFFF) {
+        somme = (somme & 0xFFFF) + (somme >> 16);
     }
 
-    // Repliement des carries (très important)
-    while (sum >> 16) {
-        sum = (sum & 0xFFFF) + (sum >> 16);
-    }
-
-    // Complément à 1
-    return (uint16_t)(~sum);
+    return ~somme; // complement a 1
 }
 
 void build_udp_header(t_afdx *f, uint16_t payload_len) {
-    uint16_t src_port = 1234;
+    uint16_t src_port = 1234; // factice
     uint16_t dest_port = 4321;
 
     uint16_t length = 8 + payload_len + 1; // UDP + payload + seq number
@@ -88,7 +85,7 @@ void build_ip_header(t_afdx *f, uint16_t payload_len, uint8_t *src_ip, uint8_t *
     f->ip[8] = 64; // TTL (64 sauts, factice)
     f->ip[9] = 17; // 17 = protocole UDP
 
-    // checksum temporairement à 0
+    // checksum à 0 (pour l'instant)
     f->ip[10] = 0;
     f->ip[11] = 0;
 
@@ -163,6 +160,9 @@ void build_afdx_frame(t_afdx *f, const uint8_t *payload, uint16_t payload_len, u
     f->frame_size = offset;
 }
 
+/*
+    Augmente le numéro de séquence de la trame
+*/
 void update_seq(t_afdx *f) {
     if (f->seq_number == 255)
         f->seq_number = 1;
@@ -182,6 +182,9 @@ void print_frame_hex(uint8_t *frame, uint16_t size) {
     printf("\n");
 }
 
+/*
+    Affichage d'une trame AFDX, division nette des champs
+*/
 void print_afdx_frame(t_afdx *f) {
     int offset = 0;
 
@@ -238,6 +241,9 @@ void print_afdx_frame(t_afdx *f) {
     printf("===================\n");
 }
 
+/*
+    Affichage de "functionnal status"
+*/
 void affiche_functionnal_status(uint8_t fs) {
     switch (fs)
     {
